@@ -350,13 +350,47 @@
                 <i class="fa-solid fa-mobile-screen-button rotate-90"></i>
                 <i class="fa-solid fa-rotate text-[10px]"></i>
             </button>
-            <button onclick="triggerPWAInstall()" id="pwa-install-btn" class="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-amber-500/25 transition-all active:scale-95">
+            <button onclick="triggerPWAInstall()" id="pwa-install-btn" class="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-amber-500/25 transition-all active:scale-95" title="Install App">
                 <i class="fa-solid fa-download text-[11px]"></i>
-                <i class="fa-solid fa-mobile-screen text-[11px]"></i>
+                <span class="hidden sm:inline">Install Studio</span>
             </button>
-            <button onclick="dismissPWABanner()" class="w-7 h-7 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all">
+            <button onclick="dismissPWABanner()" class="w-7 h-7 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all" title="Dismiss">
                 <i class="fa-solid fa-xmark text-xs"></i>
             </button>
+        </div>
+    </div>
+
+    <!-- iOS / iPadOS PWA Installation Sheet -->
+    <div id="ios-install-modal" class="fixed inset-0 z-[110] bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400">
+                    <i class="fa-solid fa-music text-base"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-zinc-100">Install MAHATI Studio</h3>
+                    <p class="text-[11px] text-zinc-400 font-mono">Apple iOS / iPadOS PWA</p>
+                </div>
+            </div>
+            <div class="space-y-3 text-xs text-zinc-300 border-y border-zinc-900 py-4">
+                <div class="flex items-start space-x-3">
+                    <span class="w-5 h-5 rounded-full bg-zinc-800 text-amber-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                    <p>Tap the <span class="font-bold text-white">Share</span> button <i class="fa-solid fa-arrow-up-from-bracket text-indigo-400 mx-1"></i> in Safari's bottom toolbar.</p>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <span class="w-5 h-5 rounded-full bg-zinc-800 text-amber-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                    <p>Scroll down and tap <span class="font-bold text-white">Add to Home Screen</span> <i class="fa-regular fa-square-plus text-emerald-400 mx-1"></i>.</p>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <span class="w-5 h-5 rounded-full bg-zinc-800 text-amber-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                    <p>Launch directly from your Home Screen for zero-latency, full-screen polyphonic performance.</p>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="closeIOSInstallModal()" class="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition-all">
+                    Understood
+                </button>
+            </div>
         </div>
     </div>
 
@@ -730,6 +764,9 @@
             </div>
             <button onclick="toggleMasterDelay()" id="btn-fx" class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center transition-all">
                 <i class="fa-solid fa-satellite-dish text-xs"></i>
+            </button>
+            <button onclick="triggerPWAInstall()" id="dock-install-btn" class="hidden w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400 hover:bg-amber-500 hover:text-black flex items-center justify-center transition-all" title="Install MAHATI Studio as Native App">
+                <i class="fa-solid fa-download text-xs"></i>
             </button>
             <button onclick="requestLandscapeFullscreen()" class="w-9 h-9 rounded-xl bg-zinc-800 text-zinc-400 hover:text-amber-400 flex items-center justify-center transition-all" title="Landscape Fullscreen">
                 <i class="fa-solid fa-rotate text-xs"></i>
@@ -1159,78 +1196,108 @@
            ========================================================================= */
         let deferredPWAPrompt = null;
 
-        function initPWASupport() {
-            // 1. Check if running as installed Standalone PWA or iOS WebApp
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        function isIOSDevice() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        function isStandaloneApp() {
+            return window.matchMedia('(display-mode: standalone)').matches
                 || window.matchMedia('(display-mode: fullscreen)').matches
+                || window.matchMedia('(display-mode: minimal-ui)').matches
                 || window.navigator.standalone === true;
+        }
 
+        function initPWASupport() {
+            const isStandalone = isStandaloneApp();
             const banner = document.getElementById('web-only-pwa-banner');
-            if (isStandalone && banner) {
-                banner.style.display = 'none';
+            const dockBtn = document.getElementById('dock-install-btn');
+
+            if (isStandalone) {
+                if (banner) banner.style.display = 'none';
+                if (dockBtn) dockBtn.classList.add('hidden');
+                return;
             }
 
-            // 2. Dynamically attach a full landscape-first Web Manifest if local manifest.json isn't loaded yet
-            const manifestObj = {
-                name: "MAHATI — Virtual Music Studio",
-                short_name: "MAHATI",
-                start_url: "./",
-                display: "standalone",
-                orientation: "landscape",
-                background_color: "#040407",
-                theme_color: "#050508",
-                icons: [
-                    {
-                        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%23050508'/%3E%3Cpath d='M78 134 V58 L138 44 V120' fill='none' stroke='%23f59e0b' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='62' cy='134' r='18' fill='%236366f1'/%3E%3Ccircle cx='122' cy='120' r='18' fill='%2310b981'/%3E%3C/svg%3E",
-                        sizes: "192x192",
-                        type: "image/svg+xml",
-                        purpose: "any maskable"
-                    },
-                    {
-                        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23050508'/%3E%3Cpath d='M210 356 V154 L368 118 V320' fill='none' stroke='%23f59e0b' stroke-width='36' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='168' cy='356' r='46' fill='%236366f1'/%3E%3Ccircle cx='326' cy='320' r='46' fill='%2310b981'/%3E%3C/svg%3E",
-                        sizes: "512x512",
-                        type: "image/svg+xml",
-                        purpose: "any maskable"
-                    }
-                ]
-            };
+            // Ensure canonical static W3C manifest is used
+            const linkEl = document.getElementById('pwa-manifest-link');
+            if (linkEl && !linkEl.getAttribute('href').endsWith('manifest.json')) {
+                linkEl.setAttribute('href', 'manifest.json');
+            }
 
-            try {
-                const blob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
-                const manifestURL = URL.createObjectURL(blob);
-                const linkEl = document.getElementById('pwa-manifest-link');
-                if (linkEl) linkEl.setAttribute('href', manifestURL);
-            } catch (_) {}
-
-            // 3. Register Service Worker if sw.js exists in local repo
+            // Register Service Worker for offline capability & fast launch
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js').catch(() => {});
+                navigator.serviceWorker.register('./sw.js', { scope: './' }).then((reg) => {
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        if (installingWorker) {
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('MAHATI Studio cache update available.');
+                                }
+                            };
+                        }
+                    };
+                }).catch(() => {});
             }
 
+            // Android & Desktop Chrome / Edge Install Prompt
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPWAPrompt = e;
+
+                if (!localStorage.getItem('mahati_pwa_dismissed')) {
+                    if (banner) banner.style.display = 'flex';
+                }
+                if (dockBtn) dockBtn.classList.remove('hidden');
             });
 
+            // iOS / iPadOS Safari detection
+            if (isIOSDevice()) {
+                if (!localStorage.getItem('mahati_pwa_dismissed')) {
+                    if (banner) banner.style.display = 'flex';
+                }
+                if (dockBtn) dockBtn.classList.remove('hidden');
+            }
+
             window.addEventListener('appinstalled', () => {
+                deferredPWAPrompt = null;
                 if (banner) banner.style.display = 'none';
+                if (dockBtn) dockBtn.classList.add('hidden');
             });
         }
 
         async function triggerPWAInstall() {
             if (deferredPWAPrompt) {
                 deferredPWAPrompt.prompt();
-                await deferredPWAPrompt.userChoice;
+                const choice = await deferredPWAPrompt.userChoice;
+                if (choice && choice.outcome === 'accepted') {
+                    const banner = document.getElementById('web-only-pwa-banner');
+                    if (banner) banner.style.display = 'none';
+                }
                 deferredPWAPrompt = null;
+            } else if (isIOSDevice()) {
+                const modal = document.getElementById('ios-install-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
             } else {
-                // Fallback: Lock to landscape fullscreen studio view
                 requestLandscapeFullscreen();
+            }
+        }
+
+        function closeIOSInstallModal() {
+            const modal = document.getElementById('ios-install-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
         }
 
         function dismissPWABanner() {
             const banner = document.getElementById('web-only-pwa-banner');
             if (banner) banner.style.display = 'none';
+            localStorage.setItem('mahati_pwa_dismissed', 'true');
         }
 
         /* =========================================================================

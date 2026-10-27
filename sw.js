@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mahati-studio-v1';
+const CACHE_NAME = 'mahati-studio-v2';
 const PRECACHE_URLS = [
   './',
   './index.html',
