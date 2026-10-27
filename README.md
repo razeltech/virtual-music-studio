@@ -9,11 +9,11 @@
 [![Web Audio API](https://img.shields.io/badge/Audio-Procedural%20Web%20Audio-6366f1?style=flat-square)](#audio-synthesis-engines)
 [![IndexedDB Storage](https://img.shields.io/badge/Storage-IndexedDB%20Sessions-f59e0b?style=flat-square)](#recording-engine--indexeddb-session-storage)
 [![Zero Dependencies](https://img.shields.io/badge/Runtime%20Dependencies-0%20(Pure%20Vanilla)-06b6d4?style=flat-square)](#architecture--stack)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Launch%20Studio-38bdf8?style=flat-square)](https://r2dapps.github.io/virtual-music-studio/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Launch%20Studio-38bdf8?style=flat-square)](https://razeltech.github.io/virtual-music-studio/)
 [![Powered By](https://img.shields.io/badge/Powered%20By-Razel%20Tech-f43f5e?style=flat-square)](https://razeltech.github.io)
 
-**Live Demo:** [https://r2dapps.github.io/virtual-music-studio/](https://r2dapps.github.io/virtual-music-studio/)  
-**Repository:** [https://github.com/r2dapps/virtual-music-studio](https://github.com/r2dapps/virtual-music-studio)
+**Live Demo:** [https://razeltech.github.io/virtual-music-studio/](https://razeltech.github.io/virtual-music-studio/)  
+**Repository:** [https://github.com/razeltech/virtual-music-studio](https://github.com/razeltech/virtual-music-studio)
 
 *Powered by [Razel Tech](https://razeltech.github.io)*
 
@@ -210,10 +210,29 @@ Open `http://localhost:8080` in Chrome, Edge, Firefox, or Safari.
 
 ---
 
-## License & Attribution
+## Topics & Discoverability Tags
 
-Developed for **MAHATI** (`virtual-music-studio`).
+```text
+web-audio-api, virtual-instruments, music-studio, synthesizer, polyphonic-synth,
+daw, pwa, drum-machine, guitar-simulator, piano-keyboard, audio-workstation,
+interactive-tutorials, javascript-audio, indexeddb, html5-canvas, sound-synthesis,
+offline-first, audio-effects, sequencer, music-production
+```
 
-**Powered by [Razel Tech](https://razeltech.github.io)**
+---
 
-All audio synthesis, UI components, and signal processing logic are provided under the MIT License.
+## License & Ownership
+
+**Copyright (c) 2026 [Razel Tech](https://razeltech.github.io). All rights reserved.**
+
+This project is owned, developed, and maintained by **Razel Tech**.
+
+Licensed under the **MIT License with Mandatory Author Attribution**:
+
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+>
+> 1. The original copyright notice and this permission notice must be included in all copies or substantial portions of the Software.
+> 2. **Mandatory Author Attribution:** Any public deployment, mirror, fork, modification, repackaging, or redistribution must visibly attribute the original author as **Razel Tech** and include an active hyperlink to **[https://razeltech.github.io](https://razeltech.github.io)** in the user interface, documentation, or repository landing page.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://r2dapps.github.io/virtual-music-studio/sitemap.xml
+Sitemap: https://razeltech.github.io/virtual-music-studio/sitemap.xml

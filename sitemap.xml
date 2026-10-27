@@ -2,12 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://r2dapps.github.io/virtual-music-studio/</loc>
+    <loc>https://razeltech.github.io/virtual-music-studio/</loc>
     <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://r2dapps.github.io/virtual-music-studio/assets/og-preview.png</image:loc>
+      <image:loc>https://razeltech.github.io/virtual-music-studio/assets/og-preview.png</image:loc>
       <image:title>MAHATI Virtual Music Studio</image:title>
       <image:caption>Multi-touch polyphonic workstation with sustained piano, guitar, drums, strings, and harp</image:caption>
     </image:image>
