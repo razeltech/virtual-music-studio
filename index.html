@@ -2466,6 +2466,7 @@
 
             const osc1 = audioCtx.createOscillator();
             const osc2 = audioCtx.createOscillator();
+            let osc3 = null;
             const lfo = audioCtx.createOscillator();
             const lfoGain = audioCtx.createGain();
             const filter = audioCtx.createBiquadFilter();
@@ -2478,12 +2479,40 @@
             lfoGain.connect(osc1.frequency);
 
             if (pianoVoice === 'grand') {
+                // Triple-string acoustic grand unison physics
                 osc1.type = 'triangle';
                 osc2.type = 'sawtooth';
-                osc2.detune.value = 4;
+                osc2.detune.value = 3.8;
+
+                osc3 = audioCtx.createOscillator();
+                osc3.type = 'triangle';
+                osc3.detune.value = -3.2;
+                osc3.frequency.setValueAtTime(freq, now);
+
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(freq * 6.5, now);
-                filter.frequency.exponentialRampToValueAtTime(freq * 2.4, now + 0.6);
+                filter.frequency.setValueAtTime(freq * 7.2, now);
+                filter.frequency.exponentialRampToValueAtTime(freq * 2.6, now + 0.45);
+                filter.Q.value = 1.4;
+
+                // Acoustic felt hammer impact transient
+                const hammerLen = Math.floor(audioCtx.sampleRate * 0.016);
+                const hammerBuf = audioCtx.createBuffer(1, hammerLen, audioCtx.sampleRate);
+                const hData = hammerBuf.getChannelData(0);
+                for (let i = 0; i < hammerLen; i++) {
+                    hData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.0035));
+                }
+                const hammer = audioCtx.createBufferSource();
+                hammer.buffer = hammerBuf;
+                const hammerFilter = audioCtx.createBiquadFilter();
+                hammerFilter.type = 'bandpass';
+                hammerFilter.frequency.setValueAtTime(Math.min(3400, freq * 3.8), now);
+                hammerFilter.Q.value = 1.6;
+                const hammerGain = audioCtx.createGain();
+                hammerGain.gain.setValueAtTime(0.18, now);
+                hammer.connect(hammerFilter);
+                hammerFilter.connect(hammerGain);
+                hammerGain.connect(masterGain);
+                hammer.start(now);
             } else if (pianoVoice === 'epiano') {
                 osc1.type = 'sine';
                 osc2.type = 'triangle';
@@ -2514,19 +2543,21 @@
 
             // Continuous hold envelope: attacks quickly, then holds steady as long as finger presses key
             env.gain.setValueAtTime(0.001, now);
-            env.gain.linearRampToValueAtTime(0.30, now + 0.012);
-            env.gain.setTargetAtTime(0.22, now + 0.02, 0.25);
+            env.gain.linearRampToValueAtTime(0.32, now + 0.012);
+            env.gain.setTargetAtTime(0.24, now + 0.02, 0.25);
 
             osc1.connect(filter);
             osc2.connect(filter);
+            if (osc3) osc3.connect(filter);
             filter.connect(env);
             env.connect(masterGain);
 
             osc1.start(now);
             osc2.start(now);
+            if (osc3) osc3.start(now);
             lfo.start(now);
 
-            return { osc1, osc2, lfo, env };
+            return { osc1, osc2, osc3, lfo, env };
         }
 
         function stopPianoPointerVoice(pointerId) {
@@ -2547,7 +2578,7 @@
 
             if (entry.voiceObj && audioCtx) {
                 const now = audioCtx.currentTime;
-                const relTime = sustainActive ? 0.85 : 0.14;
+                const relTime = sustainActive ? 0.95 : 0.16;
                 entry.voiceObj.env.gain.cancelScheduledValues(now);
                 entry.voiceObj.env.gain.setValueAtTime(Math.max(0.001, entry.voiceObj.env.gain.value), now);
                 entry.voiceObj.env.gain.exponentialRampToValueAtTime(0.0001, now + relTime);
@@ -2555,6 +2586,7 @@
                     try {
                         entry.voiceObj.osc1.stop();
                         entry.voiceObj.osc2.stop();
+                        if (entry.voiceObj.osc3) entry.voiceObj.osc3.stop();
                         entry.voiceObj.lfo.stop();
                     } catch (_) {}
                 }, relTime * 1000 + 60);
@@ -2667,92 +2699,131 @@
             const freq = baseStringFreqs[stringIdx] * Math.pow(2, fret / 12);
             const resMult = parseFloat(document.getElementById('guitar-resonance')?.value || 100) / 100;
 
-            const osc1 = audioCtx.createOscillator();
-            const osc2 = audioCtx.createOscillator();
-            const subOsc = audioCtx.createOscillator();
-            const filter = audioCtx.createBiquadFilter();
-            const bodyFilter = audioCtx.createBiquadFilter();
-            const env = audioCtx.createGain();
+            // Physical Modeling via Karplus-Strong string algorithm with wooden body resonance
+            const sampleRate = audioCtx.sampleRate;
+            const dur = Math.max(1.5, (guitarTone === 'overdrive' ? 3.2 : (guitarTone === 'electric' ? 2.8 : 2.2)) * resMult);
+            const totalSamples = Math.floor(sampleRate * Math.min(dur, 4.0));
+            const buffer = audioCtx.createBuffer(1, totalSamples, sampleRate);
+            const data = buffer.getChannelData(0);
 
-            if (guitarTone === 'acoustic') {
-                osc1.type = 'sawtooth';
-                osc2.type = 'triangle';
-                osc2.detune.value = 3.5;
-                filter.type = 'lowpass';
-                const brightness = 1900 + pluckRatioX * 2800;
-                filter.frequency.setValueAtTime(brightness, now);
-                filter.frequency.exponentialRampToValueAtTime(freq * 2.2, now + 0.35);
-                filter.frequency.exponentialRampToValueAtTime(freq * 1.2, now + 1.8 * resMult);
-                filter.Q.value = 2.6;
-            } else if (guitarTone === 'nylon') {
-                osc1.type = 'triangle';
-                osc2.type = 'sine';
-                osc2.detune.value = 2;
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(1600 + pluckRatioX * 1200, now);
-                filter.frequency.exponentialRampToValueAtTime(freq * 1.1, now + 1.5 * resMult);
-                filter.Q.value = 1.5;
+            // Calculate precise loop delay with phase-lag compensation
+            const loopDelay = (sampleRate / freq) - 0.5;
+            const N = Math.max(4, Math.floor(loopDelay));
+            const frac = Math.max(0, Math.min(1, loopDelay - N));
+
+            // Pluck dynamics & position shaping
+            const pluckDist = Math.max(0.12, Math.min(0.88, pluckRatioX));
+            const combTap = Math.max(2, Math.floor(N * (1 - pluckDist)));
+
+            // String seed excitation (shaped noise burst with high-frequency roll-off for finger/pick transient)
+            const seedLen = N + 3;
+            for (let i = 0; i <= seedLen; i++) {
+                const noise = (Math.random() * 2 - 1);
+                data[i] = noise * (guitarTone === 'nylon' ? 0.65 : 0.85);
+            }
+            // Spatial comb notch from pick location
+            for (let i = seedLen; i >= combTap; i--) {
+                data[i] -= data[i - combTap] * 0.45;
+            }
+
+            // String decay constant (rho) and lowpass damping weight (alpha)
+            let rho = 0.993;
+            let alpha = 0.50; // standard 2-point averaging
+            if (guitarTone === 'nylon') {
+                rho = 0.988;
+                alpha = 0.62; // warmer, higher harmonics damp faster
             } else if (guitarTone === 'electric') {
-                osc1.type = 'sawtooth';
-                osc2.type = 'square';
-                osc2.detune.value = 6;
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(4000, now);
-                filter.frequency.exponentialRampToValueAtTime(900, now + 2.0 * resMult);
-                filter.Q.value = 4.2;
+                rho = 0.996;
+                alpha = 0.48; // bright steel sustain
+            } else if (guitarTone === 'overdrive') {
+                rho = 0.9975;
+                alpha = 0.45; // long singing sustain
+            }
+            rho = Math.min(0.9985, rho * (0.99 + 0.01 * resMult));
+
+            // Karplus-Strong circulating loop synthesis
+            for (let i = seedLen + 1; i < totalSamples; i++) {
+                const d0 = data[i - N] || 0;
+                const d1 = data[i - N - 1] || 0;
+                const d2 = data[i - N - 2] || 0;
+                const tap0 = d0 * (1 - frac) + d1 * frac;
+                const tap1 = d1 * (1 - frac) + d2 * frac;
+                data[i] = rho * (tap0 * (1 - alpha) + tap1 * alpha);
+            }
+
+            // Playback physical string node
+            const stringSrc = audioCtx.createBufferSource();
+            stringSrc.buffer = buffer;
+
+            // Wooden soundboard body filter 1 (air cavity resonance ~105Hz)
+            const bodyAir = audioCtx.createBiquadFilter();
+            bodyAir.type = 'peaking';
+            bodyAir.frequency.value = 105;
+            bodyAir.Q.value = 2.0;
+            bodyAir.gain.value = guitarTone === 'nylon' || guitarTone === 'acoustic' ? 4.0 : 1.5;
+
+            // Wooden soundboard body filter 2 (spruce/mahogany top resonance ~215Hz)
+            const bodyTop = audioCtx.createBiquadFilter();
+            bodyTop.type = 'peaking';
+            bodyTop.frequency.value = 215;
+            bodyTop.Q.value = 2.8;
+            bodyTop.gain.value = guitarTone === 'acoustic' ? 6.0 : (guitarTone === 'nylon' ? 4.5 : 2.0);
+
+            // Amp / Tone shaper
+            const toneFilter = audioCtx.createBiquadFilter();
+            if (guitarTone === 'nylon') {
+                toneFilter.type = 'lowpass';
+                toneFilter.frequency.value = 4200;
+                toneFilter.Q.value = 0.8;
+            } else if (guitarTone === 'acoustic') {
+                toneFilter.type = 'highshelf';
+                toneFilter.frequency.value = 3200;
+                toneFilter.gain.value = 2.0;
+            } else if (guitarTone === 'electric') {
+                toneFilter.type = 'peaking';
+                toneFilter.frequency.value = 2800;
+                toneFilter.Q.value = 1.8;
+                toneFilter.gain.value = 3.0;
             } else {
-                // Overdrive Lead
-                osc1.type = 'sawtooth';
-                osc2.type = 'sawtooth';
-                osc2.detune.value = 12;
-                filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(1400 + pluckRatioX * 1300, now);
-                filter.Q.value = 2.0;
+                // Overdrive
+                toneFilter.type = 'bandpass';
+                toneFilter.frequency.value = 1800;
+                toneFilter.Q.value = 2.2;
             }
 
-            osc1.frequency.setValueAtTime(freq, now);
-            osc2.frequency.setValueAtTime(freq, now);
-            subOsc.type = 'sine';
-            subOsc.frequency.setValueAtTime(freq, now);
-
-            // Pick transient
-            const noiseBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.024, audioCtx.sampleRate);
-            const nData = noiseBuf.getChannelData(0);
-            for (let i = 0; i < nData.length; i++) {
-                nData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.005));
-            }
-            const pickNoise = audioCtx.createBufferSource();
-            pickNoise.buffer = noiseBuf;
-            const pickGain = audioCtx.createGain();
-            pickGain.gain.value = guitarTone === 'nylon' ? 0.12 : 0.25;
-
-            bodyFilter.type = 'peaking';
-            bodyFilter.frequency.value = 215;
-            bodyFilter.gain.value = 5.5;
-
-            const dur = (guitarTone === 'overdrive' ? 2.5 : 1.9) * resMult;
+            const env = audioCtx.createGain();
+            const peakGain = guitarTone === 'overdrive' ? 0.22 : 0.28;
             env.gain.setValueAtTime(0.001, now);
-            env.gain.linearRampToValueAtTime(0.32, now + 0.007);
-            env.gain.exponentialRampToValueAtTime(0.0008, now + dur);
+            env.gain.linearRampToValueAtTime(peakGain, now + 0.004);
+            env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-            osc1.connect(filter);
-            osc2.connect(filter);
-            subOsc.connect(filter);
-            pickNoise.connect(pickGain);
-            pickGain.connect(filter);
+            // Signal routing
+            if (guitarTone === 'overdrive') {
+                // Non-linear soft saturation waveshaper
+                const shaper = audioCtx.createWaveShaper();
+                const curveSamples = 256;
+                const curve = new Float32Array(curveSamples);
+                for (let k = 0; k < curveSamples; k++) {
+                    const x = (k * 2) / curveSamples - 1;
+                    curve[k] = Math.tanh(x * 3.2);
+                }
+                shaper.curve = curve;
+                shaper.oversample = '2x';
 
-            filter.connect(bodyFilter);
-            bodyFilter.connect(env);
+                stringSrc.connect(bodyAir);
+                bodyAir.connect(shaper);
+                shaper.connect(toneFilter);
+                toneFilter.connect(env);
+            } else {
+                stringSrc.connect(bodyAir);
+                bodyAir.connect(bodyTop);
+                bodyTop.connect(toneFilter);
+                toneFilter.connect(env);
+            }
+
             env.connect(masterGain);
-
-            osc1.start(now);
-            osc2.start(now);
-            subOsc.start(now);
-            pickNoise.start(now);
-
-            osc1.stop(now + dur);
-            osc2.stop(now + dur);
-            subOsc.stop(now + dur);
+            stringSrc.start(now);
+            stringSrc.stop(now + dur);
         }
 
         function triggerGuitarString(sIdx, fret, ratioX) {
