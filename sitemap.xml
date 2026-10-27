@@ -8,8 +8,13 @@
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://razeltech.github.io/virtual-music-studio/assets/og-preview.png</image:loc>
-      <image:title>MAHATI Virtual Music Studio</image:title>
-      <image:caption>Multi-touch polyphonic workstation with sustained piano, guitar, drums, strings, and harp</image:caption>
+      <image:title>MAHATI — Virtual Music Studio | Razel Tech</image:title>
+      <image:caption>Multi-touch polyphonic workstation with sustained piano, physics guitar, visual drum stage, bowed strings, and harp</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://razeltech.github.io/virtual-music-studio/assets/banner.png</image:loc>
+      <image:title>MAHATI Workstation Interface Banner</image:title>
+      <image:caption>Flagship in-browser procedural audio synthesizer by Razel Tech</image:caption>
     </image:image>
   </url>
 </urlset>
